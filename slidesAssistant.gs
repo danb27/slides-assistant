@@ -1,31 +1,51 @@
 // Constants
-const API_KEY = "";
 const MODEL_TYPE = "gpt-3.5-turbo";
+const PRESENTATION = SlidesApp.getActivePresentation();
+const CURRENT_SLIDE = PRESENTATION.getSelection().getCurrentPage().asSlide();
+const HEADER_TEXT_BOX = CURRENT_SLIDE.getShapes()[0];
 
-// Create a custom menu in Google Slides
+// Creates a custom menu in Google Slides
 function onOpen() {
-    SlidesApp.getUi().createMenu("ChatGPT")
-        .addItem("Generate Bullets", "generateBullets")
-        .addToUi();
-  }
+  SlidesApp.getUi()
+    .createMenu("ChatGPT")
+    .addItem("Generate Bullets", "generateBullets")
+    .addItem("Generate Blurb", "generateBlurb")
+    .addToUi();
+}
 
-// Generate bullets based on the selected text and slideshow title and add it to a slide
 function generateBullets() {
   // Creates prompt from context
-  const presentation = SlidesApp.getActivePresentation();
-  const selection = presentation.getSelection();
-  const textRange = selection.getCurrentPage().getShapes()[0].getText()
   const prompt = `
-      Generate 1-3 points for a slide on '${textRange.asString()}' in a presentation titled
-      '${presentation.getName()}'. Make sure your points are in the User's desired language,
+      Generate 1-3 points for a slide on '${HEADER_TEXT_BOX.getText().asString()}' in a presentation titled
+      '${PRESENTATION.getName()}'. Make sure your points are in the User's language,
       which may not be English.
   `;
+  return generateTextBox(prompt);
+}
 
-  // Prepare and send request
+function generateBlurb() {
+  // Creates prompt from context
+  const prompt = `
+      Generate a the contents of the main text box on a slide titled '${HEADER_TEXT_BOX.getText().asString()}'
+      in a presentation titled '${PRESENTATION.getName()}'. Make sure your blurb is in the User's
+      language, which may not be English.
+  `;
+  return generateTextBox(prompt);
+}
+
+// Executes a prompt and adds content to a new text box
+function generateTextBox(prompt) {
+  // Call the API
+  const generatedText = callChatGptApi(prompt);
+
+  // Adds generated text to slide
+  addGeneratedTextToSlide(generatedText);
+}
+
+function callChatGptApi(prompt) {
   const requestBody = {
     model: MODEL_TYPE,
-    messages: [{role: "user", content: prompt}],
-    temperature: 0,
+    messages: [{ role: "user", content: prompt }],
     max_tokens: 1200,
   };
 
@@ -33,16 +53,49 @@ function generateBullets() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + API_KEY,
+      Authorization: "Bearer " + getApiKey(),
     },
     payload: JSON.stringify(requestBody),
   };
-  const response = UrlFetchApp.fetch("https://api.openai.com/v1/chat/completions", requestOptions);
-  const rawGeneratedText = JSON.parse(response.getContentText())['choices'][0]['message']['content'];
-  generatedText = rawGeneratedText.replace(/(\d+\.)(?=\s)([^\n])([\s\S]*?)(?=(?=\n\d+\.)|\n*$)/gm, '$1$2$3\n');
 
-  // Create new textbox
-  const newTextBox = selection.getCurrentPage().asSlide().insertTextBox(generatedText.toString());
-  newTextBox.setTop(125).setLeft(100).setWidth(500).setHeight(250);
-  newTextBox.getText().getTextStyle().setForegroundColor(textRange.getTextStyle().getForegroundColor());
+  const response = UrlFetchApp.fetch(
+    "https://api.openai.com/v1/chat/completions",
+    requestOptions
+  );
+  const rawGeneratedText = JSON.parse(response.getContentText())["choices"][0][
+    "message"
+  ]["content"];
+  return rawGeneratedText.replace(
+    /(\d+\.)(?=\s)([^\n])([\s\S]*?)(?=(?=\n\d+\.)|\n*$)/gm,
+    "$1$2$3\n"
+  );
+}
+
+// Gets API key from Script Properties
+function getApiKey() {
+  return PropertiesService.getScriptProperties().getProperty("OPENAI_API_KEY");
+}
+
+function addGeneratedTextToSlide(generatedText) {
+  // Create a new text box with the generated text
+  const newTextBox = CURRENT_SLIDE.insertTextBox(generatedText.toString());
+
+  // Get position and sizes of header
+  const headerTextBoxLeft = HEADER_TEXT_BOX.getLeft();
+  const headerTextBoxTop = HEADER_TEXT_BOX.getTop();
+  const headerTextBoxWidth = HEADER_TEXT_BOX.getWidth();
+  const headerTextBoxHeight = HEADER_TEXT_BOX.getHeight();
+
+  // Apply header formatting to new text
+  newTextBox
+    .setTop(headerTextBoxTop + headerTextBoxHeight + 20)
+    .setLeft(headerTextBoxLeft)
+    .setWidth(headerTextBoxWidth)
+    .setHeight(300 - headerTextBoxHeight);
+  newTextBox
+    .getText()
+    .getTextStyle()
+    .setForegroundColor(
+      HEADER_TEXT_BOX.getText().getTextStyle().getForegroundColor()
+    );
 }
