@@ -9,7 +9,7 @@ credit to the original author.
 - Prompt is friendlier towards non-English slideshows
 - Prompt uses the name of the file for additional context
 - Refactor script
-- No longer requires user to have header selected.
+- No longer requires user to have header selected
 - No longer supports writing tweets (not very relevant to slideshows), 
   instead added the ability to request bullets OR a blurb of text
 - Attempts at improving formatting:

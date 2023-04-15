@@ -26,9 +26,9 @@ function generateBullets() {
 function generateBlurb() {
   // Creates prompt from context
   const prompt = `
-      Generate a the contents of the main text box on a slide titled '${HEADER_TEXT_BOX.getText().asString()}'
-      in a presentation titled '${PRESENTATION.getName()}'. Make sure your blurb is in the User's
-      language, which may not be English.
+      Generate the contents of the main text box on a slide titled '${HEADER_TEXT_BOX.getText().asString()}'
+      in a presentation titled '${PRESENTATION.getName()}'. Make sure your text is in the User's
+      language, which may not be English. The text should be in your own words, and thus should not be a quote.
   `;
   return generateTextBox(prompt);
 }
