@@ -1,4 +1,4 @@
-# chatgpt-google-slides
+# slides-assistant
 A Google Apps Script to Assist in Creating Google Slides
 
 ## Why the fork? 
